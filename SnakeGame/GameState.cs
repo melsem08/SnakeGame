@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -63,6 +64,73 @@ namespace SnakeGame
 
             Position position = empty[random.Next(empty.Count)];
             Grid[position.Row, position.Column] = GridValue.Food;
+        }
+        public Position SnakeHeadPosition()
+        {
+            return snakePositions.First.Value;
+        }
+        public Position SnakeTailPosition()
+        {
+            return snakePositions.Last.Value;
+        }
+        public IEnumerable<Position> SnakePositions()
+        {
+            return snakePositions;
+        }
+        private void AddHead(Position position)
+        {
+            snakePositions.AddFirst(position);
+            Grid[position.Row, position.Column] = GridValue.Snake;
+        }
+        private void RemoveTail() 
+        {
+            Position tail = snakePositions.Last.Value;
+            Grid[tail.Row, tail.Column] = GridValue.Empty;
+            snakePositions.RemoveLast();
+        }
+        public void ChangeDirection(Direction direction)
+        {
+            Dir = direction;
+        }
+        private bool OutsideGrid(Position position)
+        {
+            return position.Row < 0 || position.Row >= Rows || position.Column < 0 || position.Column >= Columns; 
+        }
+        private GridValue NextMove(Position newHeadPosition)
+        {
+            if(OutsideGrid(newHeadPosition)) 
+            {
+                return GridValue.Outside;
+            }
+
+            if(newHeadPosition == SnakeTailPosition())
+            {
+                return GridValue.Empty;
+            }
+
+            return Grid[newHeadPosition.Row, newHeadPosition.Column];
+        }
+
+        public void Move()
+        {
+            Position newHeadPosition = SnakeHeadPosition().Translate(Dir);
+            GridValue hit = NextMove(newHeadPosition);
+
+            if (hit == GridValue.Outside || hit == GridValue.Snake) 
+            {
+                GameOver = true;
+            }
+            else if (hit == GridValue.Empty) 
+            {
+                RemoveTail();
+                AddHead(newHeadPosition);
+            }
+            else if (hit == GridValue.Food) 
+            {
+                AddHead(newHeadPosition);
+                Score++;
+                AddFood();
+            }
         }
     }
 }
