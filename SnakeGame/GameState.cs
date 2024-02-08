@@ -11,14 +11,20 @@ namespace SnakeGame
     {
         //positions of the snake parts in the game field
         private readonly LinkedList<Position> snakePositions = new LinkedList<Position>();
+
         //randomly assign food fields with a help of this random variable
         private readonly Random random = new Random();
+
+        //buffer for avoiding collisions with snake movement changes
+        private readonly LinkedList<Direction> directionChanges = new LinkedList<Direction>();
+
         public int Rows { get; }
         public int Columns { get; }
         public GridValue[,] Grid { get; }
         public Direction Dir { get; private set; }
         public int Score { get; private set; }
         public bool GameOver { get; private set; }
+
 
         public GameState(int rows, int columns)
         {
@@ -88,9 +94,34 @@ namespace SnakeGame
             Grid[tail.Row, tail.Column] = GridValue.Empty;
             snakePositions.RemoveLast();
         }
+
+        private Direction GetLastDirection()
+        {
+            if (directionChanges.Count == 0)
+            {
+                return Dir;
+            }
+
+            return directionChanges.Last.Value;
+        }
+
+        private bool CanChangeDirection(Direction newDirection)
+        {
+            if (directionChanges.Count == 2)
+            {
+                return false;
+            }
+
+            Direction lastDirection = GetLastDirection();
+            return newDirection != lastDirection && newDirection != lastDirection.Opposite();
+        }
+
         public void ChangeDirection(Direction direction)
         {
-            Dir = direction;
+            if (CanChangeDirection(direction))
+            {
+            directionChanges.AddLast(direction);
+            }
         }
         private bool OutsideGrid(Position position)
         {
@@ -113,6 +144,12 @@ namespace SnakeGame
 
         public void Move()
         {
+            if (directionChanges.Count  > 0)
+            {
+                Dir = directionChanges.First.Value;
+                directionChanges.RemoveFirst();
+            }
+
             Position newHeadPosition = SnakeHeadPosition().Translate(Dir);
             GridValue hit = NextMove(newHeadPosition);
 
